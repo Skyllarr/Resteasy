@@ -41,6 +41,9 @@ import org.junit.BeforeClass;
 import org.junit.Test;
 import org.junit.experimental.categories.Category;
 import org.junit.runner.RunWith;
+import org.wildfly.security.auth.client.AuthenticationConfiguration;
+import org.wildfly.security.auth.client.AuthenticationContext;
+import org.wildfly.security.auth.client.MatchRule;
 
 /**
  * @tpSubChapter Security
@@ -316,6 +319,65 @@ public class BasicAuthTest {
         Response response = unauthorizedClientUsingRequestFilter.target(generateURL("/secured/authorized")).request().get();
         Assert.assertEquals(HttpResponseCodes.SC_FORBIDDEN, response.getStatus());
         Assert.assertEquals(WRONG_RESPONSE, ACCESS_FORBIDDEN_MESSAGE, response.readEntity(String.class));
+    }
+
+    /**
+     * @tpTestDetails Test secured resource with correct credentials of user that is authorized to the resource. Authentication is done using ClientConfigProvider implementation.
+     */
+    @Test
+    public void testClientConfigAuthorizedUser() {
+        AuthenticationConfiguration adminConfig = AuthenticationConfiguration.empty().useName("bill").usePassword("password1");
+        AuthenticationContext context = AuthenticationContext.empty();
+        context = context.with(MatchRule.ALL, adminConfig);
+        Runnable runnable = new Runnable() {
+            public void run() {
+                ResteasyClientBuilder builder = (ResteasyClientBuilder) ClientBuilder.newBuilder();
+                ResteasyClient client = builder.build();
+                Response response = client.target(generateURL("/secured/authorized")).request().get();
+                Assert.assertEquals(HttpResponseCodes.SC_OK, response.getStatus());
+                Assert.assertEquals(WRONG_RESPONSE, "authorized", response.readEntity(String.class));
+            }
+        };
+        context.run(runnable);
+    }
+
+    /**
+     * @tpTestDetails Test secured resource with correct credentials of user that is not authorized to the resource. Authentication is done using ClientConfigProvider implementation.
+     */
+    @Test
+    public void testClientConfigUnauthorizedUser() {
+        AuthenticationConfiguration adminConfig = AuthenticationConfiguration.empty().useName("ordinaryUser").usePassword("password2");
+        AuthenticationContext context = AuthenticationContext.empty();
+        context = context.with(MatchRule.ALL, adminConfig);
+        Runnable runnable = new Runnable() {
+            public void run() {
+                ResteasyClientBuilder builder = (ResteasyClientBuilder) ClientBuilder.newBuilder();
+                ResteasyClient client = builder.build();
+                Response response = client.target(generateURL("/secured/authorized")).request().get();
+                Assert.assertEquals(HttpResponseCodes.SC_FORBIDDEN, response.getStatus());
+                Assert.assertEquals(WRONG_RESPONSE, ACCESS_FORBIDDEN_MESSAGE, response.readEntity(String.class));
+            }
+        };
+        context.run(runnable);
+    }
+
+    /**
+     * @tpTestDetails Test that access will be unauthorized when accessing secured resource without credentials.
+     */
+    @Test
+    public void testClientUnauthenticatedUser() {
+        AuthenticationConfiguration adminConfig = AuthenticationConfiguration.empty();
+        AuthenticationContext context = AuthenticationContext.empty();
+        context = context.with(MatchRule.ALL, adminConfig);
+        Runnable runnable = new Runnable() {
+            public void run() {
+                ResteasyClientBuilder builder = (ResteasyClientBuilder) ClientBuilder.newBuilder();
+                ResteasyClient client = builder.build();
+                Response response = client.target(generateURL("/secured/authorized")).request().get();
+                Assert.assertEquals(HttpResponseCodes.SC_UNAUTHORIZED, response.getStatus());
+            }
+        };
+        context.run(runnable);
     }
 
     static class SecurityDomainSetup extends AbstractUsersRolesSecurityDomainSetup {

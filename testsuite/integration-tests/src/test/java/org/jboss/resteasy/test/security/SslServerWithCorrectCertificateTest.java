@@ -17,6 +17,7 @@ import org.junit.Before;
 import org.junit.BeforeClass;
 import org.junit.Test;
 import org.junit.runner.RunWith;
+import org.wildfly.security.auth.client.AuthenticationContext;
 
 import java.io.FileInputStream;
 import java.io.IOException;
@@ -241,9 +242,48 @@ public class SslServerWithCorrectCertificateTest extends SslTestBase {
       Assert.assertEquals(200, response.getStatus());
    }
 
+   /**
+    * Client loads truststore from ClientConfigProvider implementation. This truststore contains self-signed certificate.
+    * Server/endpoint is secured with the same self-signed certificate.
+    */
+   @Test
+   public void testClientConfigProviderTrustedServer() {
+      AuthenticationContext previousAuthContext = AuthenticationContext.getContextManager().getGlobalDefault();
+      try {
+         ElytronClientTestUtils.setElytronClientConfig(RESOURCES + "wildfly-config-correct-truststore.xml");
+         resteasyClientBuilder = (ResteasyClientBuilder) ClientBuilder.newBuilder();
+         resteasyClientBuilder.setIsTrustSelfSignedCertificates(false);
+         client = resteasyClientBuilder.build();
+         Response response = client.target(URL).request().get();
+         Assert.assertEquals("Hello World!", response.readEntity(String.class));
+         Assert.assertEquals(200, response.getStatus());
+      } finally {
+         AuthenticationContext.getContextManager().setGlobalDefault(previousAuthContext);
+      }
+   }
+
+   /**
+    * Client loads truststore from ClientConfigProvider implementation. This truststore contains self-signed certificate.
+    * Server/endpoint is secured with different self-signed certificate so exception should be thrown.
+    */
+   @Test(expected = ProcessingException.class)
+   public void testClientConfigProviderDifferentCert() {
+      AuthenticationContext previousAuthContext = AuthenticationContext.getContextManager().getGlobalDefault();
+      try {
+         ElytronClientTestUtils.setElytronClientConfig(RESOURCES + "wildfly-config-different-cert.xml");
+         resteasyClientBuilder = (ResteasyClientBuilder) ClientBuilder.newBuilder();
+         resteasyClientBuilder.setIsTrustSelfSignedCertificates(false);
+         client = resteasyClientBuilder.build();
+         Response response = client.target(URL).request().get();
+         Assert.assertEquals("Hello World!", response.readEntity(String.class));
+         Assert.assertEquals(200, response.getStatus());
+      } finally {
+         AuthenticationContext.getContextManager().setGlobalDefault(previousAuthContext);
+      }
+   }
+
    @After
    public void after() {
       client.close();
    }
-
 }
