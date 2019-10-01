@@ -1,0 +1,12 @@
+package org.jboss.resteasy.client.jaxrs.spi;
+
+import javax.net.ssl.SSLContext;
+import java.net.URI;
+
+public interface ClientConfigProvider {
+
+   String getUsername(URI uri) throws ClientConfigException;
+   String getPassword(URI uri) throws ClientConfigException;
+   String getBearerToken(URI uri) throws ClientConfigException;
+   SSLContext getSSLContext(URI uri) throws ClientConfigException;
+}

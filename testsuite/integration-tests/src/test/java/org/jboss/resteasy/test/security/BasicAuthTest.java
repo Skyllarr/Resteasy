@@ -6,6 +6,7 @@ import java.nio.file.Path;
 import java.nio.file.Paths;
 import java.util.Hashtable;
 
+import javax.net.ssl.SSLContext;
 import javax.ws.rs.NotAuthorizedException;
 import javax.ws.rs.client.ClientBuilder;
 import javax.ws.rs.core.Response;
@@ -41,6 +42,10 @@ import org.junit.BeforeClass;
 import org.junit.Test;
 import org.junit.experimental.categories.Category;
 import org.junit.runner.RunWith;
+import org.wildfly.security.auth.client.AuthenticationConfiguration;
+import org.wildfly.security.auth.client.AuthenticationContext;
+import org.wildfly.security.auth.client.MatchRule;
+import org.wildfly.security.sasl.SaslMechanismSelector;
 
 /**
  * @tpSubChapter Security
@@ -247,17 +252,45 @@ public class BasicAuthTest {
     */
    @Test
    public void testAccesForbiddenMessage() throws Exception {
-      UsernamePasswordCredentials credentials = new UsernamePasswordCredentials("bill", "password1");
-      CredentialsProvider credentialsProvider = new BasicCredentialsProvider();
-      credentialsProvider.setCredentials(new AuthScope(AuthScope.ANY), credentials);
-      CloseableHttpClient client = HttpClients.custom().setDefaultCredentialsProvider(credentialsProvider).build();
-      ApacheHttpClientEngine engine = ApacheHttpClientEngine.create(client);
 
-      ResteasyClient authorizedClient = ((ResteasyClientBuilder)ClientBuilder.newBuilder()).httpEngine(engine).build();
-      Response response = authorizedClient.target(generateURL("/secured/deny")).request().get();
-      Assert.assertEquals(HttpResponseCodes.SC_FORBIDDEN, response.getStatus());
-      Assert.assertEquals(ACCESS_FORBIDDEN_MESSAGE, response.readEntity(String.class));
-      authorizedClient.close();
+
+      //create your authentication configuration
+//      AuthenticationConfiguration adminConfig =
+//              AuthenticationConfiguration.empty()
+//                      .useName("bill")
+//                      .usePassword("password1!");
+//
+////create your authentication context
+//      AuthenticationContext context = AuthenticationContext.empty();
+//      context = context.with(MatchRule.ALL, adminConfig);
+//
+//
+////create your runnable for establishing a connection
+//      Runnable runnable =
+//              new Runnable() {
+//                 public void run() {
+//                    try {
+//                       UsernamePasswordCredentials credentials = new UsernamePasswordCredentials("bill", "password1");
+//                       CredentialsProvider credentialsProvider = new BasicCredentialsProvider();
+//                       credentialsProvider.setCredentials(new AuthScope(AuthScope.ANY), credentials);
+//                       CloseableHttpClient client = HttpClients.custom().setDefaultCredentialsProvider(credentialsProvider).build();
+//                       ApacheHttpClientEngine engine = ApacheHttpClientEngine.create(client);
+//
+//                       ResteasyClient authorizedClient = ((ResteasyClientBuilder)ClientBuilder.newBuilder()).httpEngine(engine).build();
+//                       Response response = authorizedClient.target(generateURL("/secured/deny")).request().get();
+//                       Assert.assertEquals(HttpResponseCodes.SC_FORBIDDEN, response.getStatus());
+//                       Assert.assertEquals(ACCESS_FORBIDDEN_MESSAGE, response.readEntity(String.class));
+//                       authorizedClient.close();
+//                    } catch (Exception e) {
+//                       e.printStackTrace();
+//                    }
+//                 }
+//              };
+//
+////use your authentication context to run your client
+//      context.run(runnable);
+
+
    }
 
    /**
@@ -279,6 +312,8 @@ public class BasicAuthTest {
     */
    @Test
    public void testContentTypeWithUnauthorizedMessage() {
+//      ElytronClientTestUtils.setElytronClientConfig("/home/skylar/work/projects/Resteasy/testsuite/integration-tests/src/test/resources/wildfly-config-test.xml");
+
       Response response = noAutorizationClient.target(generateURL("/secured/denyWithContentType")).request().get();
       Assert.assertEquals(HttpResponseCodes.SC_UNAUTHORIZED, response.getStatus());
       Assert.assertEquals("Incorrect Content-type header", "text/html;charset=UTF-8", response.getHeaderString("Content-type"));
@@ -289,12 +324,19 @@ public class BasicAuthTest {
      * @tpTestDetails Test secured resource with correct credentials. Authentication is done using BasicAuthRequestFilter.
      * @tpSince RESTEasy 3.7.0
      */
-    @Test
-    public void testWithClientRequestFilterAuthorizedUser() {
-        Response response = authorizedClientUsingRequestFilter.target(generateURL("/secured/authorized")).request().get();
-        Assert.assertEquals(HttpResponseCodes.SC_OK, response.getStatus());
-        Assert.assertEquals(WRONG_RESPONSE, "authorized", response.readEntity(String.class));
-    }
+//    @Test
+//    public void testWithClientRequestFilterAuthorizedUser() throws Exception{
+//       AuthenticationContext previousAuthContext = AuthenticationContext.getContextManager().getGlobalDefault();
+//       SSLContext previousDefaultSSLContext = SSLContext.getDefault();
+//       try {
+//        Response response = authorizedClientUsingRequestFilter.target(generateURL("/secured/authorized")).request().get();
+//        Assert.assertEquals(HttpResponseCodes.SC_OK, response.getStatus());
+//        Assert.assertEquals(WRONG_RESPONSE, "authorized", response.readEntity(String.class));
+//       } finally {
+//          AuthenticationContext.getContextManager().setGlobalDefault(previousAuthContext);
+//          SSLContext.setDefault(previousDefaultSSLContext);
+//       }
+//    }
 
     /**
      * @tpTestDetails Test secured resource with incorrect credentials. Authentication is done using BasicAuthRequestFilter.
@@ -311,12 +353,60 @@ public class BasicAuthTest {
      * @tpTestDetails Test secured resource with correct credentials of user that is not authorized to the resource. Authentication is done using BasicAuthRequestFilter.
      * @tpSince RESTEasy 3.7.0
      */
-    @Test
-    public void testWithClientRequestFilterUnauthorizedUser() {
-        Response response = unauthorizedClientUsingRequestFilter.target(generateURL("/secured/authorized")).request().get();
-        Assert.assertEquals(HttpResponseCodes.SC_FORBIDDEN, response.getStatus());
-        Assert.assertEquals(WRONG_RESPONSE, ACCESS_FORBIDDEN_MESSAGE, response.readEntity(String.class));
-    }
+//    @Test
+//    public void testWithClientRequestFilterUnauthorizedUser() {
+//
+//       AuthenticationConfiguration adminConfig =
+//               AuthenticationConfiguration.empty()
+//                       .useName("se")
+//                       .usePassword("se");
+//
+////create your authentication context
+//       AuthenticationContext context = AuthenticationContext.empty();
+//       context = context.with(MatchRule.ALL, adminConfig);
+//
+////create your runnable for establishing a connection
+//       Runnable runnable =
+//               new Runnable() {
+//                  public void run() {
+//                     try {
+//                        Response response = unauthorizedClientUsingRequestFilter.target(generateURL("/secured/authorized")).request().get();
+//                        Assert.assertEquals(HttpResponseCodes.SC_FORBIDDEN, response.getStatus());
+//                        Assert.assertEquals(WRONG_RESPONSE, ACCESS_FORBIDDEN_MESSAGE, response.readEntity(String.class));
+//
+//                     } catch (Exception e) {
+//                        e.printStackTrace();
+//                     }
+//                  }
+//               };
+////use your authentication context to run your client
+//       context.run(runnable);
+//    }
+//
+//    @Test
+//    @RunAsClient
+//    public void temp () throws Exception {
+//       AuthenticationContext previousAuthContext = AuthenticationContext.getContextManager().getGlobalDefault();
+//       SSLContext previousDefaultSSLContext = SSLContext.getDefault();
+//       try {
+//          ElytronClientTestUtils.setElytronClientConfig("/home/skylar/work/projects/Resteasy/testsuite/integration-tests/src/test/resources/wildfly-config-test.xml");
+//
+//          UsernamePasswordCredentials credentials = new UsernamePasswordCredentials("username", "password1");
+//          CredentialsProvider credentialsProvider = new BasicCredentialsProvider();
+//          credentialsProvider.setCredentials(new AuthScope(AuthScope.ANY), credentials);
+//          CloseableHttpClient httpClient = HttpClients.custom().setDefaultCredentialsProvider(credentialsProvider).build();
+//          ApacheHttpClientEngine engine = ApacheHttpClientEngine.create(httpClient);
+//          ResteasyClient client  = ((ResteasyClientBuilder)ClientBuilder.newBuilder()).httpEngine(engine).build();
+//
+////          ResteasyClient client = (ResteasyClient) ClientBuilder.newClient();
+//          client.target(generateURL("/secured/authorized")).request().get();
+//          System.err.println("i am here");
+//          ElytronClientTestUtils.setElytronClientConfig("/home/skylar/work/projects/Resteasy/testsuite/integration-tests/src/test/resources/wildfly-config-test.xml");
+//       } finally {
+//          AuthenticationContext.getContextManager().setGlobalDefault(previousAuthContext);
+//          SSLContext.setDefault(previousDefaultSSLContext);
+//       }
+//    }
 
     static class SecurityDomainSetup extends AbstractUsersRolesSecurityDomainSetup {
 
