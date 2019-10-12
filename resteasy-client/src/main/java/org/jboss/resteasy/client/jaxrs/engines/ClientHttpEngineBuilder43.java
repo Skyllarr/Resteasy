@@ -1,7 +1,7 @@
 package org.jboss.resteasy.client.jaxrs.engines;
 
 import java.io.IOException;
-import java.net.InetSocketAddress;
+//import java.net.InetSocketAddress;
 import java.net.Socket;
 import java.net.URI;
 import java.net.URISyntaxException;

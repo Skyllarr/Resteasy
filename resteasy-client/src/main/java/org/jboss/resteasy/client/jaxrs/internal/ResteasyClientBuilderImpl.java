@@ -18,7 +18,6 @@ import javax.net.ssl.HostnameVerifier;
 import javax.net.ssl.SSLContext;
 import javax.ws.rs.Priorities;
 import javax.ws.rs.RuntimeType;
-import javax.ws.rs.client.ClientRequestFilter;
 import javax.ws.rs.core.Configuration;
 
 import java.security.AccessController;
