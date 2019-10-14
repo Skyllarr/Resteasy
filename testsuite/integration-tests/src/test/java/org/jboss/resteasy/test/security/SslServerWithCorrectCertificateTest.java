@@ -17,6 +17,7 @@ import org.junit.Before;
 import org.junit.BeforeClass;
 import org.junit.Test;
 import org.junit.runner.RunWith;
+import org.wildfly.security.auth.client.AuthenticationContext;
 
 import java.io.FileInputStream;
 import java.io.IOException;
@@ -241,9 +242,65 @@ public class SslServerWithCorrectCertificateTest extends SslTestBase {
       Assert.assertEquals(200, response.getStatus());
    }
 
+   @Test
+   public void testClientConfigProviderTrustedServer() throws NoSuchAlgorithmException {
+      AuthenticationContext previousAuthContext = AuthenticationContext.getContextManager().getGlobalDefault();
+      try {
+         ElytronClientTestUtils.setElytronClientConfig(RESOURCES + "wildfly-config-correct-truststore.xml");
+         resteasyClientBuilder = (ResteasyClientBuilder) ClientBuilder.newBuilder();
+         resteasyClientBuilder.setIsTrustSelfSignedCertificates(false);
+         client = resteasyClientBuilder.build();
+         Response response = client.target(URL).request().get();
+         Assert.assertEquals("Hello World!", response.readEntity(String.class));
+         Assert.assertEquals(200, response.getStatus());
+      } finally {
+         AuthenticationContext.getContextManager().setGlobalDefault(previousAuthContext);
+      }
+   }
+
+   @Test(expected = ProcessingException.class)
+   public void testClientConfigProviderDifferentCert() throws NoSuchAlgorithmException {
+      AuthenticationContext previousAuthContext = AuthenticationContext.getContextManager().getGlobalDefault();
+      try {
+         ElytronClientTestUtils.setElytronClientConfig(RESOURCES + "wildfly-config-different-cert.xml");
+         resteasyClientBuilder = (ResteasyClientBuilder) ClientBuilder.newBuilder();
+         resteasyClientBuilder.setIsTrustSelfSignedCertificates(false);
+         client = resteasyClientBuilder.build();
+         Response response = client.target(URL).request().get();
+         Assert.assertEquals("Hello World!", response.readEntity(String.class));
+         Assert.assertEquals(200, response.getStatus());
+      } finally {
+         AuthenticationContext.getContextManager().setGlobalDefault(previousAuthContext);
+      }
+   }
+
    @After
    public void after() {
       client.close();
    }
 
+
+//         TrustManagerFactory tmf = TrustManagerFactory
+//               .getInstance(TrustManagerFactory.getDefaultAlgorithm());
+//         tmf.init(correctTruststore);
+//         X509TrustManager myTm = null;
+//         for (TrustManager tm : tmf.getTrustManagers()) {
+//            if (tm instanceof X509TrustManager) {
+//               myTm = (X509TrustManager) tm;
+//               break;
+//            }
+//         }
+//         AuthenticationConfiguration adminConfig = AuthenticationConfiguration.empty();
+//         SSLContext mySSLContext = SSLContext.getInstance("TLS");
+//         mySSLContext.init(null, new TrustManager[] { myTm }, null);
+//         AuthenticationContext context = AuthenticationContext.empty();
+//         context = context.withSsl(MatchRule.ALL, new SSLContextBuilder().setSessionTimeout(1).setTrustManager(myTm).build());
+//         context = context.withSsl(MatchRule.ALL, mySSLContext);
+//         AuthenticationContext.getContextManager().setGlobalDefault(context);
+//         Runnable runnable = new Runnable() {
+//            public void run() {
+
+//            }
+//         };
+//         context.run(runnable);
 }

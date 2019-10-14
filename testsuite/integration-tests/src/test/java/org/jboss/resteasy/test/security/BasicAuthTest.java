@@ -4,9 +4,9 @@ import java.io.File;
 import java.net.URISyntaxException;
 import java.nio.file.Path;
 import java.nio.file.Paths;
+import java.security.NoSuchAlgorithmException;
 import java.util.Hashtable;
 
-import javax.net.ssl.SSLContext;
 import javax.ws.rs.NotAuthorizedException;
 import javax.ws.rs.client.ClientBuilder;
 import javax.ws.rs.core.Response;
@@ -45,7 +45,6 @@ import org.junit.runner.RunWith;
 import org.wildfly.security.auth.client.AuthenticationConfiguration;
 import org.wildfly.security.auth.client.AuthenticationContext;
 import org.wildfly.security.auth.client.MatchRule;
-import org.wildfly.security.sasl.SaslMechanismSelector;
 
 /**
  * @tpSubChapter Security
@@ -65,60 +64,60 @@ public class BasicAuthTest {
    private static ResteasyClient unauthorizedClient;
    private static ResteasyClient noAutorizationClient;
 
-    // Following clients are used in tests for ClientRequestFilter
-    private static ResteasyClient authorizedClientUsingRequestFilter;
-    private static ResteasyClient unauthorizedClientUsingRequestFilter;
-    private static ResteasyClient unauthorizedClientUsingRequestFilterWithWrongPassword;
+   // Following clients are used in tests for ClientRequestFilter
+   private static ResteasyClient authorizedClientUsingRequestFilter;
+   private static ResteasyClient unauthorizedClientUsingRequestFilter;
+   private static ResteasyClient unauthorizedClientUsingRequestFilterWithWrongPassword;
 
-    @BeforeClass
-    public static void init() {
-        // authorizedClient
-        {
-            UsernamePasswordCredentials credentials = new UsernamePasswordCredentials("bill", "password1");
-            CredentialsProvider credentialsProvider = new BasicCredentialsProvider();
-            credentialsProvider.setCredentials(new AuthScope(AuthScope.ANY), credentials);
-            CloseableHttpClient client = HttpClients.custom().setDefaultCredentialsProvider(credentialsProvider).build();
-            ApacheHttpClientEngine engine = ApacheHttpClientEngine.create(client);
-            authorizedClient = ((ResteasyClientBuilder)ClientBuilder.newBuilder()).httpEngine(engine).build();
-        }
-        // unauthorizedClient
-        {
-            UsernamePasswordCredentials credentials_other = new UsernamePasswordCredentials("ordinaryUser", "password2");
-            CredentialsProvider credentialsProvider = new BasicCredentialsProvider();
-            credentialsProvider.setCredentials(new AuthScope(AuthScope.ANY), credentials_other);
-            CloseableHttpClient client = HttpClients.custom().setDefaultCredentialsProvider(credentialsProvider).build();
-            ApacheHttpClientEngine engine = ApacheHttpClientEngine.create(client);
-            unauthorizedClient = ((ResteasyClientBuilder)ClientBuilder.newBuilder()).httpEngine(engine).build();
-        }
-        // noAuthorizationClient
-        noAutorizationClient = (ResteasyClient)ClientBuilder.newClient();
+   @BeforeClass
+   public static void init() {
+      // authorizedClient
+      {
+         UsernamePasswordCredentials credentials = new UsernamePasswordCredentials("bill", "password1");
+         CredentialsProvider credentialsProvider = new BasicCredentialsProvider();
+         credentialsProvider.setCredentials(new AuthScope(AuthScope.ANY), credentials);
+         CloseableHttpClient client = HttpClients.custom().setDefaultCredentialsProvider(credentialsProvider).build();
+         ApacheHttpClientEngine engine = ApacheHttpClientEngine.create(client);
+         authorizedClient = ((ResteasyClientBuilder)ClientBuilder.newBuilder()).httpEngine(engine).build();
+      }
+      // unauthorizedClient
+      {
+         UsernamePasswordCredentials credentials_other = new UsernamePasswordCredentials("ordinaryUser", "password2");
+         CredentialsProvider credentialsProvider = new BasicCredentialsProvider();
+         credentialsProvider.setCredentials(new AuthScope(AuthScope.ANY), credentials_other);
+         CloseableHttpClient client = HttpClients.custom().setDefaultCredentialsProvider(credentialsProvider).build();
+         ApacheHttpClientEngine engine = ApacheHttpClientEngine.create(client);
+         unauthorizedClient = ((ResteasyClientBuilder)ClientBuilder.newBuilder()).httpEngine(engine).build();
+      }
+      // noAuthorizationClient
+      noAutorizationClient = (ResteasyClient)ClientBuilder.newClient();
 
-        // authorizedClient with ClientRequestFilter
-        {
-            ResteasyClientBuilder builder = (ResteasyClientBuilder) ClientBuilder.newBuilder();
-            authorizedClientUsingRequestFilter = (ResteasyClient) builder.register(new BasicAuthRequestFilter("bill", "password1")).build();
-        }
-        // unauthorizedClient with ClientRequestFilter - unauthorized user
-        {
-            ResteasyClientBuilder builder = (ResteasyClientBuilder) ClientBuilder.newBuilder();
-            unauthorizedClientUsingRequestFilter = (ResteasyClient) builder.register(new BasicAuthRequestFilter("ordinaryUser", "password2")).build();
-        }
-        // unauthorizedClient with ClientRequestFilter - wrong password
-        {
-            ResteasyClientBuilder builder = (ResteasyClientBuilder) ClientBuilder.newBuilder();
-            unauthorizedClientUsingRequestFilterWithWrongPassword = (ResteasyClient) builder.register(new BasicAuthRequestFilter("bill", "password2")).build();
-        }
-    }
+      // authorizedClient with ClientRequestFilter
+      {
+         ResteasyClientBuilder builder = (ResteasyClientBuilder) ClientBuilder.newBuilder();
+         authorizedClientUsingRequestFilter = (ResteasyClient) builder.register(new BasicAuthRequestFilter("bill", "password1")).build();
+      }
+      // unauthorizedClient with ClientRequestFilter - unauthorized user
+      {
+         ResteasyClientBuilder builder = (ResteasyClientBuilder) ClientBuilder.newBuilder();
+         unauthorizedClientUsingRequestFilter = (ResteasyClient) builder.register(new BasicAuthRequestFilter("ordinaryUser", "password2")).build();
+      }
+      // unauthorizedClient with ClientRequestFilter - wrong password
+      {
+         ResteasyClientBuilder builder = (ResteasyClientBuilder) ClientBuilder.newBuilder();
+         unauthorizedClientUsingRequestFilterWithWrongPassword = (ResteasyClient) builder.register(new BasicAuthRequestFilter("bill", "password2")).build();
+      }
+   }
 
-    @AfterClass
-    public static void after() throws Exception {
-        authorizedClient.close();
-        unauthorizedClient.close();
-        noAutorizationClient.close();
-        authorizedClientUsingRequestFilter.close();
-        unauthorizedClientUsingRequestFilter.close();
-        unauthorizedClientUsingRequestFilterWithWrongPassword.close();
-    }
+   @AfterClass
+   public static void after() throws Exception {
+      authorizedClient.close();
+      unauthorizedClient.close();
+      noAutorizationClient.close();
+      authorizedClientUsingRequestFilter.close();
+      unauthorizedClientUsingRequestFilter.close();
+      unauthorizedClientUsingRequestFilterWithWrongPassword.close();
+   }
 
    @Deployment
    public static Archive<?> deployLocatingResource() {
@@ -252,45 +251,17 @@ public class BasicAuthTest {
     */
    @Test
    public void testAccesForbiddenMessage() throws Exception {
+      UsernamePasswordCredentials credentials = new UsernamePasswordCredentials("bill", "password1");
+      CredentialsProvider credentialsProvider = new BasicCredentialsProvider();
+      credentialsProvider.setCredentials(new AuthScope(AuthScope.ANY), credentials);
+      CloseableHttpClient client = HttpClients.custom().setDefaultCredentialsProvider(credentialsProvider).build();
+      ApacheHttpClientEngine engine = ApacheHttpClientEngine.create(client);
 
-
-      //create your authentication configuration
-//      AuthenticationConfiguration adminConfig =
-//              AuthenticationConfiguration.empty()
-//                      .useName("bill")
-//                      .usePassword("password1!");
-//
-////create your authentication context
-//      AuthenticationContext context = AuthenticationContext.empty();
-//      context = context.with(MatchRule.ALL, adminConfig);
-//
-//
-////create your runnable for establishing a connection
-//      Runnable runnable =
-//              new Runnable() {
-//                 public void run() {
-//                    try {
-//                       UsernamePasswordCredentials credentials = new UsernamePasswordCredentials("bill", "password1");
-//                       CredentialsProvider credentialsProvider = new BasicCredentialsProvider();
-//                       credentialsProvider.setCredentials(new AuthScope(AuthScope.ANY), credentials);
-//                       CloseableHttpClient client = HttpClients.custom().setDefaultCredentialsProvider(credentialsProvider).build();
-//                       ApacheHttpClientEngine engine = ApacheHttpClientEngine.create(client);
-//
-//                       ResteasyClient authorizedClient = ((ResteasyClientBuilder)ClientBuilder.newBuilder()).httpEngine(engine).build();
-//                       Response response = authorizedClient.target(generateURL("/secured/deny")).request().get();
-//                       Assert.assertEquals(HttpResponseCodes.SC_FORBIDDEN, response.getStatus());
-//                       Assert.assertEquals(ACCESS_FORBIDDEN_MESSAGE, response.readEntity(String.class));
-//                       authorizedClient.close();
-//                    } catch (Exception e) {
-//                       e.printStackTrace();
-//                    }
-//                 }
-//              };
-//
-////use your authentication context to run your client
-//      context.run(runnable);
-
-
+      ResteasyClient authorizedClient = ((ResteasyClientBuilder)ClientBuilder.newBuilder()).httpEngine(engine).build();
+      Response response = authorizedClient.target(generateURL("/secured/deny")).request().get();
+      Assert.assertEquals(HttpResponseCodes.SC_FORBIDDEN, response.getStatus());
+      Assert.assertEquals(ACCESS_FORBIDDEN_MESSAGE, response.readEntity(String.class));
+      authorizedClient.close();
    }
 
    /**
@@ -312,103 +283,46 @@ public class BasicAuthTest {
     */
    @Test
    public void testContentTypeWithUnauthorizedMessage() {
-//      ElytronClientTestUtils.setElytronClientConfig("/home/skylar/work/projects/Resteasy/testsuite/integration-tests/src/test/resources/wildfly-config-test.xml");
-
       Response response = noAutorizationClient.target(generateURL("/secured/denyWithContentType")).request().get();
       Assert.assertEquals(HttpResponseCodes.SC_UNAUTHORIZED, response.getStatus());
       Assert.assertEquals("Incorrect Content-type header", "text/html;charset=UTF-8", response.getHeaderString("Content-type"));
       Assert.assertTrue("WWW-Authenticate header is not included", response.getHeaderString("WWW-Authenticate").contains("Basic realm="));
    }
 
-    /**
-     * @tpTestDetails Test secured resource with correct credentials. Authentication is done using BasicAuthRequestFilter.
-     * @tpSince RESTEasy 3.7.0
-     */
-//    @Test
-//    public void testWithClientRequestFilterAuthorizedUser() throws Exception{
-//       AuthenticationContext previousAuthContext = AuthenticationContext.getContextManager().getGlobalDefault();
-//       SSLContext previousDefaultSSLContext = SSLContext.getDefault();
-//       try {
-//        Response response = authorizedClientUsingRequestFilter.target(generateURL("/secured/authorized")).request().get();
-//        Assert.assertEquals(HttpResponseCodes.SC_OK, response.getStatus());
-//        Assert.assertEquals(WRONG_RESPONSE, "authorized", response.readEntity(String.class));
-//       } finally {
-//          AuthenticationContext.getContextManager().setGlobalDefault(previousAuthContext);
-//          SSLContext.setDefault(previousDefaultSSLContext);
-//       }
-//    }
+   /**
+    * @tpTestDetails Test secured resource with correct credentials. Authentication is done using BasicAuthRequestFilter.
+    * @tpSince RESTEasy 3.7.0
+    */
+   @Test
+   public void testWithClientRequestFilterAuthorizedUser() {
+      Response response = authorizedClientUsingRequestFilter.target(generateURL("/secured/authorized")).request().get();
+      Assert.assertEquals(HttpResponseCodes.SC_OK, response.getStatus());
+      Assert.assertEquals(WRONG_RESPONSE, "authorized", response.readEntity(String.class));
+   }
 
-    /**
-     * @tpTestDetails Test secured resource with incorrect credentials. Authentication is done using BasicAuthRequestFilter.
-     * @tpSince RESTEasy 3.7.0
-     */
-    @Test
-    public void testWithClientRequestFilterWrongPassword(){
-        Response response = unauthorizedClientUsingRequestFilterWithWrongPassword.target(generateURL("/secured/authorized")).request().get();
-        Assert.assertEquals(HttpResponseCodes.SC_UNAUTHORIZED, response.getStatus());
-        Assert.assertTrue("WWW-Authenticate header is not included", response.getHeaderString("WWW-Authenticate").contains("Basic realm="));
-    }
+   /**
+    * @tpTestDetails Test secured resource with incorrect credentials. Authentication is done using BasicAuthRequestFilter.
+    * @tpSince RESTEasy 3.7.0
+    */
+   @Test
+   public void testWithClientRequestFilterWrongPassword(){
+      Response response = unauthorizedClientUsingRequestFilterWithWrongPassword.target(generateURL("/secured/authorized")).request().get();
+      Assert.assertEquals(HttpResponseCodes.SC_UNAUTHORIZED, response.getStatus());
+      Assert.assertTrue("WWW-Authenticate header is not included", response.getHeaderString("WWW-Authenticate").contains("Basic realm="));
+   }
 
-    /**
-     * @tpTestDetails Test secured resource with correct credentials of user that is not authorized to the resource. Authentication is done using BasicAuthRequestFilter.
-     * @tpSince RESTEasy 3.7.0
-     */
-//    @Test
-//    public void testWithClientRequestFilterUnauthorizedUser() {
-//
-//       AuthenticationConfiguration adminConfig =
-//               AuthenticationConfiguration.empty()
-//                       .useName("se")
-//                       .usePassword("se");
-//
-////create your authentication context
-//       AuthenticationContext context = AuthenticationContext.empty();
-//       context = context.with(MatchRule.ALL, adminConfig);
-//
-////create your runnable for establishing a connection
-//       Runnable runnable =
-//               new Runnable() {
-//                  public void run() {
-//                     try {
-//                        Response response = unauthorizedClientUsingRequestFilter.target(generateURL("/secured/authorized")).request().get();
-//                        Assert.assertEquals(HttpResponseCodes.SC_FORBIDDEN, response.getStatus());
-//                        Assert.assertEquals(WRONG_RESPONSE, ACCESS_FORBIDDEN_MESSAGE, response.readEntity(String.class));
-//
-//                     } catch (Exception e) {
-//                        e.printStackTrace();
-//                     }
-//                  }
-//               };
-////use your authentication context to run your client
-//       context.run(runnable);
-//    }
-//
-//    @Test
-//    @RunAsClient
-//    public void temp () throws Exception {
-//       AuthenticationContext previousAuthContext = AuthenticationContext.getContextManager().getGlobalDefault();
-//       SSLContext previousDefaultSSLContext = SSLContext.getDefault();
-//       try {
-//          ElytronClientTestUtils.setElytronClientConfig("/home/skylar/work/projects/Resteasy/testsuite/integration-tests/src/test/resources/wildfly-config-test.xml");
-//
-//          UsernamePasswordCredentials credentials = new UsernamePasswordCredentials("username", "password1");
-//          CredentialsProvider credentialsProvider = new BasicCredentialsProvider();
-//          credentialsProvider.setCredentials(new AuthScope(AuthScope.ANY), credentials);
-//          CloseableHttpClient httpClient = HttpClients.custom().setDefaultCredentialsProvider(credentialsProvider).build();
-//          ApacheHttpClientEngine engine = ApacheHttpClientEngine.create(httpClient);
-//          ResteasyClient client  = ((ResteasyClientBuilder)ClientBuilder.newBuilder()).httpEngine(engine).build();
-//
-////          ResteasyClient client = (ResteasyClient) ClientBuilder.newClient();
-//          client.target(generateURL("/secured/authorized")).request().get();
-//          System.err.println("i am here");
-//          ElytronClientTestUtils.setElytronClientConfig("/home/skylar/work/projects/Resteasy/testsuite/integration-tests/src/test/resources/wildfly-config-test.xml");
-//       } finally {
-//          AuthenticationContext.getContextManager().setGlobalDefault(previousAuthContext);
-//          SSLContext.setDefault(previousDefaultSSLContext);
-//       }
-//    }
+   /**
+    * @tpTestDetails Test secured resource with correct credentials of user that is not authorized to the resource. Authentication is done using BasicAuthRequestFilter.
+    * @tpSince RESTEasy 3.7.0
+    */
+   @Test
+   public void testWithClientRequestFilterUnauthorizedUser() {
+      Response response = unauthorizedClientUsingRequestFilter.target(generateURL("/secured/authorized")).request().get();
+      Assert.assertEquals(HttpResponseCodes.SC_FORBIDDEN, response.getStatus());
+      Assert.assertEquals(WRONG_RESPONSE, ACCESS_FORBIDDEN_MESSAGE, response.readEntity(String.class));
+   }
 
-    static class SecurityDomainSetup extends AbstractUsersRolesSecurityDomainSetup {
+   static class SecurityDomainSetup extends AbstractUsersRolesSecurityDomainSetup {
 
       @Override
       public void setConfigurationPath() throws URISyntaxException {
@@ -417,5 +331,79 @@ public class BasicAuthTest {
          createPropertiesFiles(new File(parent.toUri()));
       }
 
+   }
+
+   @Test
+   public void testClientConfigAuthorizedUser() throws NoSuchAlgorithmException {
+//      AuthenticationContext previousAuthContext = AuthenticationContext.getContextManager().getGlobalDefault();
+//      SSLContext previousDefaultSSLContext = SSLContext.getDefault();
+//      try {
+         AuthenticationConfiguration adminConfig = AuthenticationConfiguration.empty().useName("bill").usePassword("password1");
+         AuthenticationContext context = AuthenticationContext.empty();
+         context = context.with(MatchRule.ALL, adminConfig);
+//         AuthenticationContext.getContextManager().setGlobalDefault(context);
+         Runnable runnable = new Runnable() {
+            public void run() {
+               ResteasyClientBuilder builder = (ResteasyClientBuilder) ClientBuilder.newBuilder();
+               ResteasyClient client = builder.build();
+               Response response = client.target(generateURL("/secured/authorized")).request().get();
+               Assert.assertEquals(HttpResponseCodes.SC_OK, response.getStatus());
+               Assert.assertEquals(WRONG_RESPONSE, "authorized", response.readEntity(String.class));
+            }
+         };
+         context.run(runnable);
+//      } finally {
+//         AuthenticationContext.getContextManager().setGlobalDefault(previousAuthContext);
+//         SSLContext.setDefault(previousDefaultSSLContext);
+//      }
+   }
+
+   @Test
+   public void testClientConfigUnauthorizedUser() throws NoSuchAlgorithmException {
+//      AuthenticationContext previousAuthContext = AuthenticationContext.getContextManager().getGlobalDefault();
+//      SSLContext previousDefaultSSLContext = SSLContext.getDefault();
+//      try {
+         AuthenticationConfiguration adminConfig = AuthenticationConfiguration.empty().useName("ordinaryUser").usePassword("password2");
+         AuthenticationContext context = AuthenticationContext.empty();
+         context = context.with(MatchRule.ALL, adminConfig);
+//         AuthenticationContext.getContextManager().setGlobalDefault(context);
+         Runnable runnable = new Runnable() {
+            public void run() {
+               ResteasyClientBuilder builder = (ResteasyClientBuilder) ClientBuilder.newBuilder();
+               ResteasyClient client = builder.build();
+               Response response = client.target(generateURL("/secured/authorized")).request().get();
+               Assert.assertEquals(HttpResponseCodes.SC_FORBIDDEN, response.getStatus());
+               Assert.assertEquals(WRONG_RESPONSE, ACCESS_FORBIDDEN_MESSAGE, response.readEntity(String.class));
+            }
+         };
+         context.run(runnable);
+//      } finally {
+//         AuthenticationContext.getContextManager().setGlobalDefault(previousAuthContext);
+//         SSLContext.setDefault(previousDefaultSSLContext);
+//      }
+   }
+
+   @Test
+   public void testClientUnauthenticatedUser() throws NoSuchAlgorithmException {
+//      AuthenticationContext previousAuthContext = AuthenticationContext.getContextManager().getGlobalDefault();
+//      SSLContext previousDefaultSSLContext = SSLContext.getDefault();
+//      try {
+         AuthenticationConfiguration adminConfig = AuthenticationConfiguration.empty();
+         AuthenticationContext context = AuthenticationContext.empty();
+         context = context.with(MatchRule.ALL, adminConfig);
+//         AuthenticationContext.getContextManager().setGlobalDefault(context);
+         Runnable runnable = new Runnable() {
+            public void run() {
+               ResteasyClientBuilder builder = (ResteasyClientBuilder) ClientBuilder.newBuilder();
+               ResteasyClient client = builder.build();
+               Response response = client.target(generateURL("/secured/authorized")).request().get();
+               Assert.assertEquals(HttpResponseCodes.SC_UNAUTHORIZED, response.getStatus());
+            }
+         };
+         context.run(runnable);
+//      } finally {
+//         AuthenticationContext.getContextManager().setGlobalDefault(previousAuthContext);
+//         SSLContext.setDefault(previousDefaultSSLContext);
+//      }
    }
 }

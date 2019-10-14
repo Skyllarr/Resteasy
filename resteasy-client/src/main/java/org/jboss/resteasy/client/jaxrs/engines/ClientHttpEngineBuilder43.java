@@ -145,6 +145,7 @@ public class ClientHttpEngineBuilder43 implements ClientHttpEngineBuilder {
             };
          } else if (clientConfigProviderIterator.hasNext())
          {
+            final ClientConfigProvider configProvider = ((ClientConfigProvider) clientConfigProviderIterator.next());
             sslsf = new SSLConnectionSocketFactory(SSLContext.getDefault()) {
                @Override
                public Socket createSocket(HttpContext context) throws IOException {
@@ -152,8 +153,7 @@ public class ClientHttpEngineBuilder43 implements ClientHttpEngineBuilder {
                      String targetHostUri = context.getAttribute(
                              HttpCoreContext.HTTP_TARGET_HOST).toString();
                      if (targetHostUri != null) {
-                        return ((ClientConfigProvider) clientConfigProviderIterator.next())
-                                .getSSLContext(new URI(targetHostUri)).getSocketFactory().createSocket();
+                        return configProvider.getSSLContext(new URI(targetHostUri)).getSocketFactory().createSocket();
                      } else {
                         throw new RuntimeException("URI is not known");
                      }
