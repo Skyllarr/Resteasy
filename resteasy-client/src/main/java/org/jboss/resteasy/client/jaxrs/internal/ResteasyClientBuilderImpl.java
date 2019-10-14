@@ -393,6 +393,8 @@ public class ResteasyClientBuilderImpl extends ResteasyClientBuilder
       }
       Iterator<ClientConfigProvider> serviceLoaderIterator = ServiceLoader.load(ClientConfigProvider.class).iterator();
       if (serviceLoaderIterator.hasNext()) {
+         ClientConfigProvider clientConfigProvider = ServiceLoader.load(ClientConfigProvider.class).iterator().next();
+         config.getProperties().put(ClientConfigProvider.CLIENT_CONFIG_PROVIDER, clientConfigProvider);
          config.register(new ClientConfigProviderFilter(), Priorities.AUTHENTICATION);
       }
 

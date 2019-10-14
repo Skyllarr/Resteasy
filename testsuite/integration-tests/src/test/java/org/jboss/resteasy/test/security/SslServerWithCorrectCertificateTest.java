@@ -243,7 +243,7 @@ public class SslServerWithCorrectCertificateTest extends SslTestBase {
    }
 
    @Test
-   public void testClientConfigProviderTrustedServer() throws NoSuchAlgorithmException {
+   public void testClientConfigProviderTrustedServer() {
       AuthenticationContext previousAuthContext = AuthenticationContext.getContextManager().getGlobalDefault();
       try {
          ElytronClientTestUtils.setElytronClientConfig(RESOURCES + "wildfly-config-correct-truststore.xml");
@@ -259,7 +259,7 @@ public class SslServerWithCorrectCertificateTest extends SslTestBase {
    }
 
    @Test(expected = ProcessingException.class)
-   public void testClientConfigProviderDifferentCert() throws NoSuchAlgorithmException {
+   public void testClientConfigProviderDifferentCert() {
       AuthenticationContext previousAuthContext = AuthenticationContext.getContextManager().getGlobalDefault();
       try {
          ElytronClientTestUtils.setElytronClientConfig(RESOURCES + "wildfly-config-different-cert.xml");
@@ -278,29 +278,4 @@ public class SslServerWithCorrectCertificateTest extends SslTestBase {
    public void after() {
       client.close();
    }
-
-
-//         TrustManagerFactory tmf = TrustManagerFactory
-//               .getInstance(TrustManagerFactory.getDefaultAlgorithm());
-//         tmf.init(correctTruststore);
-//         X509TrustManager myTm = null;
-//         for (TrustManager tm : tmf.getTrustManagers()) {
-//            if (tm instanceof X509TrustManager) {
-//               myTm = (X509TrustManager) tm;
-//               break;
-//            }
-//         }
-//         AuthenticationConfiguration adminConfig = AuthenticationConfiguration.empty();
-//         SSLContext mySSLContext = SSLContext.getInstance("TLS");
-//         mySSLContext.init(null, new TrustManager[] { myTm }, null);
-//         AuthenticationContext context = AuthenticationContext.empty();
-//         context = context.withSsl(MatchRule.ALL, new SSLContextBuilder().setSessionTimeout(1).setTrustManager(myTm).build());
-//         context = context.withSsl(MatchRule.ALL, mySSLContext);
-//         AuthenticationContext.getContextManager().setGlobalDefault(context);
-//         Runnable runnable = new Runnable() {
-//            public void run() {
-
-//            }
-//         };
-//         context.run(runnable);
 }

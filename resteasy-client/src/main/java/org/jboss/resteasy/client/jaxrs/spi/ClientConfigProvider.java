@@ -5,6 +5,8 @@ import java.net.URI;
 
 public interface ClientConfigProvider {
 
+   String CLIENT_CONFIG_PROVIDER = "clientConfigProvider";
+
    String getUsername(URI uri) throws ClientConfigException;
    String getPassword(URI uri) throws ClientConfigException;
    String getBearerToken(URI uri) throws ClientConfigException;
