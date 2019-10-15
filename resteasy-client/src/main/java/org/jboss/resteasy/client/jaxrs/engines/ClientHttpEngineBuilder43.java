@@ -125,7 +125,6 @@ public class ClientHttpEngineBuilder43 implements ClientHttpEngineBuilder {
                .build();
 
             sslsf = new SSLConnectionSocketFactory(ctx, verifier) {
-
                @Override
                protected void prepareSocket(SSLSocket socket) throws IOException
                {

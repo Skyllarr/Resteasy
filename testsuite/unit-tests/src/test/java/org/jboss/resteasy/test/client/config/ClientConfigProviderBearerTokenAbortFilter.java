@@ -11,8 +11,9 @@ public class ClientConfigProviderBearerTokenAbortFilter implements ClientRequest
 
    @Override
    public void filter(ClientRequestContext requestContext) throws IOException {
-      Object authorizationHeader = requestContext.getHeaderString("Authorization");
+      String authorizationHeader = requestContext.getHeaderString("Authorization");
       Assert.assertEquals("The request authorization header is not correct", "Bearer myTestToken", authorizationHeader);
+      Assert.assertTrue("The request authorization header should not contain both token and Basic credentials", !(authorizationHeader.contains("Basic") && authorizationHeader.contains("Bearer")));
       requestContext.abortWith(Response.ok().build());
    }
 }

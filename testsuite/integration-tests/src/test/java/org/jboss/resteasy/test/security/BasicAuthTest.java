@@ -77,7 +77,7 @@ public class BasicAuthTest {
             credentialsProvider.setCredentials(new AuthScope(AuthScope.ANY), credentials);
             CloseableHttpClient client = HttpClients.custom().setDefaultCredentialsProvider(credentialsProvider).build();
             ApacheHttpClientEngine engine = ApacheHttpClientEngine.create(client);
-            authorizedClient = ((ResteasyClientBuilder) ClientBuilder.newBuilder()).httpEngine(engine).build();
+            authorizedClient = ((ResteasyClientBuilder)ClientBuilder.newBuilder()).httpEngine(engine).build();
         }
         // unauthorizedClient
         {
@@ -86,10 +86,10 @@ public class BasicAuthTest {
             credentialsProvider.setCredentials(new AuthScope(AuthScope.ANY), credentials_other);
             CloseableHttpClient client = HttpClients.custom().setDefaultCredentialsProvider(credentialsProvider).build();
             ApacheHttpClientEngine engine = ApacheHttpClientEngine.create(client);
-            unauthorizedClient = ((ResteasyClientBuilder) ClientBuilder.newBuilder()).httpEngine(engine).build();
+            unauthorizedClient = ((ResteasyClientBuilder)ClientBuilder.newBuilder()).httpEngine(engine).build();
         }
         // noAuthorizationClient
-        noAutorizationClient = (ResteasyClient) ClientBuilder.newClient();
+        noAutorizationClient = (ResteasyClient)ClientBuilder.newClient();
 
         // authorizedClient with ClientRequestFilter
         {
@@ -256,7 +256,7 @@ public class BasicAuthTest {
         CloseableHttpClient client = HttpClients.custom().setDefaultCredentialsProvider(credentialsProvider).build();
         ApacheHttpClientEngine engine = ApacheHttpClientEngine.create(client);
 
-        ResteasyClient authorizedClient = ((ResteasyClientBuilder) ClientBuilder.newBuilder()).httpEngine(engine).build();
+        ResteasyClient authorizedClient = ((ResteasyClientBuilder)ClientBuilder.newBuilder()).httpEngine(engine).build();
         Response response = authorizedClient.target(generateURL("/secured/deny")).request().get();
         Assert.assertEquals(HttpResponseCodes.SC_FORBIDDEN, response.getStatus());
         Assert.assertEquals(ACCESS_FORBIDDEN_MESSAGE, response.readEntity(String.class));
@@ -304,7 +304,7 @@ public class BasicAuthTest {
      * @tpSince RESTEasy 3.7.0
      */
     @Test
-    public void testWithClientRequestFilterWrongPassword() {
+    public void testWithClientRequestFilterWrongPassword(){
         Response response = unauthorizedClientUsingRequestFilterWithWrongPassword.target(generateURL("/secured/authorized")).request().get();
         Assert.assertEquals(HttpResponseCodes.SC_UNAUTHORIZED, response.getStatus());
         Assert.assertTrue("WWW-Authenticate header is not included", response.getHeaderString("WWW-Authenticate").contains("Basic realm="));
@@ -325,7 +325,7 @@ public class BasicAuthTest {
 
         @Override
         public void setConfigurationPath() throws URISyntaxException {
-            Path filepath = Paths.get(BasicAuthTest.class.getResource("users.properties").toURI());
+            Path filepath= Paths.get(BasicAuthTest.class.getResource("users.properties").toURI());
             Path parent = filepath.getParent();
             createPropertiesFiles(new File(parent.toUri()));
         }

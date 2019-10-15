@@ -54,6 +54,22 @@ public class ClientConfigProviderBearerTokenTest {
       context.run(runnable);
    }
 
+    @Test
+    public void testClientWithBearerTokenAndCredentials() {
+        BearerTokenCredential bearerTokenCredential = new BearerTokenCredential("myTestToken");
+        AuthenticationConfiguration adminConfig = AuthenticationConfiguration.empty().useName("username").usePassword("password").useBearerTokenCredential(bearerTokenCredential);
+        AuthenticationContext context = AuthenticationContext.empty();
+        context = context.with(MatchRule.ALL, adminConfig);
+        Runnable runnable = new Runnable() {
+            public void run() {
+                Response response = client.target(dummyUrl)
+                        .register(ClientConfigProviderBearerTokenAbortFilter.class).request().get();
+                Assert.assertEquals(HttpResponseCodes.SC_OK, response.getStatus());
+            }
+        };
+        context.run(runnable);
+    }
+
    @Test
    public void testClientWithoutBearerToken() {
       AuthenticationConfiguration adminConfig = AuthenticationConfiguration.empty();
