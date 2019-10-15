@@ -242,6 +242,10 @@ public class SslServerWithCorrectCertificateTest extends SslTestBase {
       Assert.assertEquals(200, response.getStatus());
    }
 
+   /**
+    * Client loads truststore from ClientConfigProvider implementation. This truststore contains self-signed certificate.
+    * Server/endpoint is secured with the same self-signed certificate.
+    */
    @Test
    public void testClientConfigProviderTrustedServer() {
       AuthenticationContext previousAuthContext = AuthenticationContext.getContextManager().getGlobalDefault();
@@ -258,6 +262,10 @@ public class SslServerWithCorrectCertificateTest extends SslTestBase {
       }
    }
 
+   /**
+    * Client loads truststore from ClientConfigProvider implementation. This truststore contains self-signed certificate.
+    * Server/endpoint is secured with different self-signed certificate so exception should be thrown.
+    */
    @Test(expected = ProcessingException.class)
    public void testClientConfigProviderDifferentCert() {
       AuthenticationContext previousAuthContext = AuthenticationContext.getContextManager().getGlobalDefault();
