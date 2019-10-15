@@ -24,7 +24,6 @@ import org.jboss.shrinkwrap.api.spec.WebArchive;
 import org.junit.AfterClass;
 import org.junit.Assert;
 import org.junit.BeforeClass;
-import org.junit.Ignore;
 import org.junit.Test;
 import org.junit.runner.RunWith;
 
@@ -110,7 +109,6 @@ public class SpecialResourceTest {
     * @tpSince RESTEasy 3.0.16
     */
    @Test
-//   @Ignore  // this must be ignored after upgrading to 4.4.7 httpcomponents.httpcore
    public void test583() throws Exception {
       HttpClient client = HttpClientBuilder.create().build();
       HttpPut method = new HttpPut(generateURL("/api"));

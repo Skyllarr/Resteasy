@@ -9,6 +9,12 @@ import javax.ws.rs.core.HttpHeaders;
 import java.io.IOException;
 import java.net.URI;
 
+/**
+ * Client filter that will attach authorization header with either HTTP Basic auth or Bearer token auth.
+ * Credentials and token are loaded from ClientConfigProvider implementation.
+ *
+ * @author dvilkola@redhat.com
+ */
 public class ClientConfigProviderFilter implements ClientRequestFilter {
 
    @Override

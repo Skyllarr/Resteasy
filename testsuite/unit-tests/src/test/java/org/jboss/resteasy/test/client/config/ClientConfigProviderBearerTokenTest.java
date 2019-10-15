@@ -38,6 +38,10 @@ public class ClientConfigProviderBearerTokenTest {
       client.close();
    }
 
+    /**
+     * @tpTestDetails Test that bearer token is loaded from ClientConfigProvider implementation and is used in Authorization header.
+     * This is done with registered filter that checks Authorization header.
+     */
    @Test
    public void testClientWithBearerToken() {
       BearerTokenCredential bearerTokenCredential = new BearerTokenCredential("myTestToken");
@@ -54,6 +58,10 @@ public class ClientConfigProviderBearerTokenTest {
       context.run(runnable);
    }
 
+    /**
+     * @tpTestDetails Test that credentials from ClientConfigProvider implementation are not used for HTTP Basic auth if Bearer token can be retrieved from ClientConfigProvider implementation.
+     * This is done with registered filter that checks Authorization header.
+     */
     @Test
     public void testClientWithBearerTokenAndCredentials() {
         BearerTokenCredential bearerTokenCredential = new BearerTokenCredential("myTestToken");
@@ -70,6 +78,10 @@ public class ClientConfigProviderBearerTokenTest {
         context.run(runnable);
     }
 
+    /**
+     * @tpTestDetails Test that request does not contain Bearer token if none is retrieved from ClientConfigProvider implementation.
+     * This is done with registered filter that checks Authorization header.
+     */
    @Test
    public void testClientWithoutBearerToken() {
       AuthenticationConfiguration adminConfig = AuthenticationConfiguration.empty();

@@ -143,6 +143,7 @@ public class ClientHttpEngineBuilder43 implements ClientHttpEngineBuilder {
             };
          } else if (clientConfigProviderIterator.hasNext())
          {
+            // delegate creation of socket to ClientConfigProvider implementation
             final ClientConfigProvider configProvider = ((ClientConfigProvider) clientConfigProviderIterator.next());
             sslsf = new SSLConnectionSocketFactory(SSLContext.getDefault()) {
                @Override

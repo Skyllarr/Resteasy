@@ -4,7 +4,7 @@
     <authentication-client xmlns="urn:elytron:client:1.4">
         <key-stores>
             <key-store name="truststore" type="JKS">
-                <file name="/home/skylar/work/projects/Resteasy/testsuite/integration-tests/src/test/resources/org/jboss/resteasy/test/security/client-different-cert.truststore"/>
+                <file name="src/test/resources/org/jboss/resteasy/test/security/client-different-cert.truststore"/>
             </key-store>
         </key-stores>
         <ssl-contexts>
