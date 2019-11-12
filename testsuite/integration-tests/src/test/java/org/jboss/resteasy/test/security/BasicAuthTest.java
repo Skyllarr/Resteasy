@@ -12,10 +12,13 @@ import org.jboss.arquillian.junit.Arquillian;
 import org.jboss.as.arquillian.api.ServerSetup;
 import org.jboss.resteasy.category.ExpectedFailingOnWildFly18;
 import org.jboss.resteasy.category.NotForForwardCompatibility;
+import org.jboss.resteasy.client.jaxrs.BasicAuthentication;
 import org.jboss.resteasy.client.jaxrs.ResteasyClient;
 import org.jboss.resteasy.client.jaxrs.ResteasyClientBuilder;
 import org.jboss.resteasy.client.jaxrs.engines.ApacheHttpClient4Engine;
 import org.jboss.resteasy.setup.AbstractUsersRolesSecurityDomainSetup;
+import org.jboss.resteasy.test.security.helperFilters.ClientConfigProviderBearerTokenAbortFilter;
+import org.jboss.resteasy.test.security.helperFilters.ClientConfigProviderNoBasicAuthorizationHeaderFilter;
 import org.jboss.resteasy.test.security.resource.BasicAuthRequestFilter;
 import org.jboss.resteasy.test.security.resource.BasicAuthBaseProxy;
 import org.jboss.resteasy.test.security.resource.BasicAuthBaseResource;
@@ -32,14 +35,23 @@ import org.junit.BeforeClass;
 import org.junit.Test;
 import org.junit.experimental.categories.Category;
 import org.junit.runner.RunWith;
+import org.wildfly.security.auth.client.AuthenticationConfiguration;
+import org.wildfly.security.auth.client.AuthenticationContext;
+import org.wildfly.security.auth.client.MatchRule;
+import org.wildfly.security.credential.BearerTokenCredential;
 
 import javax.ws.rs.NotAuthorizedException;
+import javax.ws.rs.Priorities;
+import javax.ws.rs.client.ClientBuilder;
 import javax.ws.rs.core.Response;
 import java.io.File;
 import java.net.URISyntaxException;
 import java.nio.file.Path;
 import java.nio.file.Paths;
 import java.util.Hashtable;
+
+import static org.junit.Assert.assertTrue;
+import static org.junit.Assert.fail;
 
 /**
  * @tpSubChapter Security
@@ -313,6 +325,188 @@ public class BasicAuthTest {
         Response response = unauthorizedClientUsingRequestFilter.target(generateURL("/secured/authorized")).request().get();
         Assert.assertEquals(HttpResponseCodes.SC_FORBIDDEN, response.getStatus());
         Assert.assertEquals(WRONG_RESPONSE, ACCESS_FORBIDDEN_MESSAGE, response.readEntity(String.class));
+    }
+
+    /**
+     * @tpTestDetails Test secured resource with correct credentials of user that is authorized to the resource. Authentication is done using ClientConfigProvider implementation.
+     */
+    @Test
+    public void testClientConfigAuthorizedUser() {
+        AuthenticationConfiguration adminConfig = AuthenticationConfiguration.empty().useName("bill").usePassword("password1");
+        AuthenticationContext context = AuthenticationContext.empty();
+        context = context.with(MatchRule.ALL, adminConfig);
+        Runnable runnable = new Runnable() {
+            public void run() {
+                ResteasyClientBuilder builder = (ResteasyClientBuilder) ClientBuilder.newBuilder();
+                ResteasyClient client = builder.build();
+                Response response = client.target(generateURL("/secured/authorized")).request().get();
+                Assert.assertEquals(HttpResponseCodes.SC_OK, response.getStatus());
+                Assert.assertEquals(WRONG_RESPONSE, "authorized", response.readEntity(String.class));
+                client.close();
+            }
+        };
+        context.run(runnable);
+    }
+
+    /**
+     * @tpTestDetails Test secured resource with correct credentials of user that is authorized to the resource. ClientConfigProvider config is correctly ignored if credentials are specified for resteasy client.
+     */
+    @Test
+    public void testClientConfigCredentialsAreIgnoredIfSpecified() {
+        AuthenticationConfiguration adminConfig = AuthenticationConfiguration.empty().useName("incorrectUsername").usePassword("incorrectPassword");
+        AuthenticationContext context = AuthenticationContext.empty();
+        context = context.with(MatchRule.ALL, adminConfig);
+        Runnable runnable = new Runnable() {
+            public void run() {
+                ResteasyClientBuilder builder = (ResteasyClientBuilder) ClientBuilder.newBuilder();
+                ResteasyClient client = builder.build();
+                client.register(new BasicAuthentication("bill", "password1"));
+                Response response = client.target(generateURL("/secured/authorized")).request().get();
+                Assert.assertEquals(HttpResponseCodes.SC_OK, response.getStatus());
+                Assert.assertEquals(WRONG_RESPONSE, "authorized", response.readEntity(String.class));
+                client.close();
+            }
+        };
+        context.run(runnable);
+    }
+
+    /**
+     * @tpTestDetails Test secured resource with correct credentials of user that is authorized to the resource. ClientConfigProvider config is ignored if credentials are specified for resteasy client.
+     */
+    @Test
+    public void testClientConfigBearerTokenIsIgnoredIfBasicSpecified() {
+        BearerTokenCredential bearerTokenCredential = new BearerTokenCredential("myTestToken");
+        AuthenticationConfiguration adminConfig = AuthenticationConfiguration.empty().useBearerTokenCredential(bearerTokenCredential);
+        AuthenticationContext context = AuthenticationContext.empty();
+        context = context.with(MatchRule.ALL, adminConfig);
+        Runnable runnable = new Runnable() {
+            public void run() {
+                ResteasyClientBuilder builder = (ResteasyClientBuilder) ClientBuilder.newBuilder();
+                ResteasyClient client = builder.build();
+                client.register(new BasicAuthentication("bill", "password1"));
+                client.register(ClientConfigProviderBearerTokenAbortFilter.class);
+                try {
+                    client.target(generateURL("/secured/authorized")).request().get();
+                    fail("Configuration not found ex should be thrown.");
+                } catch (Exception e) {
+                    // check that bearer token was not added
+                    assertTrue(e.getMessage().contains("The request authorization header is not correct expected:<B[earer myTestToken]> but was:<B[asic YmlsbDpwYXNzd29yZDE=]>"));
+                    client.close();
+                }
+            }
+        };
+        context.run(runnable);
+    }
+
+    /**
+     * @tpTestDetails Test secured resource with correct credentials of user that is not authorized to the resource. Credentials are loaded from ClientConfigProvider implementation.
+     */
+    @Test
+    public void testClientConfigUnauthorizedUser() {
+        AuthenticationConfiguration adminConfig = AuthenticationConfiguration.empty().useName("ordinaryUser").usePassword("password2");
+        AuthenticationContext context = AuthenticationContext.empty();
+        context = context.with(MatchRule.ALL, adminConfig);
+        Runnable runnable = new Runnable() {
+            public void run() {
+                ResteasyClientBuilder builder = (ResteasyClientBuilder) ClientBuilder.newBuilder();
+                ResteasyClient client = builder.build();
+                Response response = client.target(generateURL("/secured/authorized")).request().get();
+                Assert.assertEquals(HttpResponseCodes.SC_FORBIDDEN, response.getStatus());
+                Assert.assertEquals(WRONG_RESPONSE, ACCESS_FORBIDDEN_MESSAGE, response.readEntity(String.class));
+                client.close();
+            }
+        };
+        context.run(runnable);
+    }
+
+    /**
+     * @tpTestDetails Test that access will be unauthorized when accessing secured resource without credentials.
+     */
+    @Test
+    public void testClientUnauthenticatedUser() {
+        AuthenticationConfiguration adminConfig = AuthenticationConfiguration.empty();
+        AuthenticationContext context = AuthenticationContext.empty();
+        context = context.with(MatchRule.ALL, adminConfig);
+        Runnable runnable = new Runnable() {
+            public void run() {
+                ResteasyClientBuilder builder = (ResteasyClientBuilder) ClientBuilder.newBuilder();
+                ResteasyClient client = builder.build();
+                Response response = client.target(generateURL("/secured/authorized")).request().get();
+                Assert.assertEquals(HttpResponseCodes.SC_UNAUTHORIZED, response.getStatus());
+                client.close();
+            }
+        };
+        context.run(runnable);
+    }
+
+    /**
+     * @tpTestDetails Test that access credentials from ClientConfigProvider are used only if both username and password are present.
+     */
+    @Test
+    public void testClientConfigProviderUsernameWithoutPasswordWillBeIgnored() {
+        AuthenticationConfiguration adminConfig = AuthenticationConfiguration.empty().useName("thisNameWillBeIgnoredBecausePasswordIsMissing");
+        AuthenticationContext context = AuthenticationContext.empty();
+        context = context.with(MatchRule.ALL, adminConfig);
+        Runnable runnable = new Runnable() {
+            public void run() {
+                ResteasyClientBuilder builder = (ResteasyClientBuilder) ClientBuilder.newBuilder();
+                ResteasyClient client = builder.build();
+                client.register(new ClientConfigProviderNoBasicAuthorizationHeaderFilter(), Priorities.USER);
+                try {
+                    client.target(generateURL("/secured/authorized")).request().get();
+                } catch (Exception e) {
+                    assertTrue(e.getMessage().contains("The request authorization header is not correct expected:<Bearer myTestToken> but was:<null>"));
+                    client.close();
+                }
+                Response response = builder.build().target(generateURL("/secured/authorized")).request().get();
+                Assert.assertEquals(HttpResponseCodes.SC_UNAUTHORIZED, response.getStatus());
+                client.close();
+            }
+        };
+        context.run(runnable);
+    }
+
+    /**
+     * @tpTestDetails Test that ClientConfigProvider credentials are not used when specified for different destination of the request.
+     */
+    @Test
+    public void testClientConfigProviderChooseCredentialsBasedOnDestination() {
+        AuthenticationConfiguration adminConfig = AuthenticationConfiguration.empty().useName("bill").usePassword("password1");
+        AuthenticationContext context = AuthenticationContext.empty();
+        context = context.with(MatchRule.ALL.matchHost("www.redhat.com"), adminConfig);
+        Runnable runnable = new Runnable() {
+            public void run() {
+                ResteasyClientBuilder builder = (ResteasyClientBuilder) ClientBuilder.newBuilder();
+                ResteasyClient client = builder.build();
+                Response response = client.target(generateURL("/secured/authorized")).request().get();
+                // will be unauthorized because credentials were set for different hostname than we are calling
+                Assert.assertEquals(HttpResponseCodes.SC_UNAUTHORIZED, response.getStatus());
+                client.close();
+            }
+        };
+        context.run(runnable);
+    }
+
+    /**
+     * @tpTestDetails Test that ClientConfigProvider credentials are used when specified for requested  URL.
+     */
+    @Test
+    public void testClientConfigProviderChooseCredentialsBasedOnDestination2() {
+        AuthenticationConfiguration adminConfig = AuthenticationConfiguration.empty().useName("bill").usePassword("password1");
+        AuthenticationContext context = AuthenticationContext.empty();
+        context = context.with(MatchRule.ALL.matchHost("127.0.0.1"), adminConfig);
+        Runnable runnable = new Runnable() {
+            public void run() {
+                ResteasyClientBuilder builder = (ResteasyClientBuilder) ClientBuilder.newBuilder();
+                ResteasyClient client = builder.build();
+                Response response = client.target(generateURL("/secured/authorized")).request().get();
+                // will be authorized because we are calling hostname that credentials are set for
+                Assert.assertEquals(HttpResponseCodes.SC_OK, response.getStatus());
+                Assert.assertEquals(WRONG_RESPONSE, "authorized", response.readEntity(String.class));
+                client.close();
+            }
+        };
+        context.run(runnable);
     }
 
     static class SecurityDomainSetup extends AbstractUsersRolesSecurityDomainSetup {

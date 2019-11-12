@@ -4,6 +4,8 @@ import org.jboss.arquillian.container.test.api.Deployment;
 import org.jboss.arquillian.container.test.api.RunAsClient;
 import org.jboss.arquillian.container.test.api.TargetsContainer;
 import org.jboss.arquillian.junit.Arquillian;
+import org.jboss.arquillian.test.api.ArquillianResource;
+import org.jboss.resteasy.client.jaxrs.BasicAuthentication;
 import org.jboss.resteasy.client.jaxrs.ResteasyClientBuilder;
 import org.jboss.resteasy.test.security.resource.CustomTrustManager;
 import org.jboss.resteasy.test.security.resource.SslResource;
@@ -16,10 +18,12 @@ import org.junit.Before;
 import org.junit.BeforeClass;
 import org.junit.Test;
 import org.junit.runner.RunWith;
+import org.wildfly.security.auth.client.AuthenticationContext;
 
 import java.io.FileInputStream;
 import java.io.IOException;
 import java.io.InputStream;
+import java.net.URL;
 import java.security.KeyStore;
 import java.security.KeyStoreException;
 import java.security.NoSuchAlgorithmException;
@@ -236,6 +240,134 @@ public class SslServerWithCorrectCertificateTest extends SslTestBase {
       Response response = client.target(URL).request().get();
       Assert.assertEquals("Hello World!", response.readEntity(String.class));
       Assert.assertEquals(200, response.getStatus());
+   }
+
+   /**
+    * Client loads truststore from ClientConfigProvider implementation. This truststore contains self-signed certificate.
+    * Server/endpoint is secured with the same self-signed certificate.
+    */
+   @Test
+   public void testClientConfigProviderTrustedServer() {
+      AuthenticationContext previousAuthContext = AuthenticationContext.getContextManager().getGlobalDefault();
+      try {
+         ElytronClientTestUtils.setElytronClientConfig(RESOURCES + "wildfly-config-correct-truststore.xml");
+         resteasyClientBuilder = (ResteasyClientBuilder) ClientBuilder.newBuilder();
+         resteasyClientBuilder.setIsTrustSelfSignedCertificates(false);
+         client = resteasyClientBuilder.build();
+         Response response = client.target(URL).request().get();
+         Assert.assertEquals("Hello World!", response.readEntity(String.class));
+         Assert.assertEquals(200, response.getStatus());
+      } finally {
+         AuthenticationContext.getContextManager().setGlobalDefault(previousAuthContext);
+      }
+   }
+
+   /**
+    * Client loads truststore from ClientConfigProvider implementation. This truststore contains self-signed certificate.
+    * Server/endpoint is secured with different self-signed certificate so exception should be thrown.
+    */
+   @Test(expected = ProcessingException.class)
+   public void testClientConfigProviderDifferentCert() {
+      AuthenticationContext previousAuthContext = AuthenticationContext.getContextManager().getGlobalDefault();
+      try {
+         ElytronClientTestUtils.setElytronClientConfig(RESOURCES + "wildfly-config-different-cert.xml");
+         resteasyClientBuilder = (ResteasyClientBuilder) ClientBuilder.newBuilder();
+         resteasyClientBuilder.setIsTrustSelfSignedCertificates(false);
+         client = resteasyClientBuilder.build();
+         Response response = client.target(URL).request().get();
+         Assert.assertEquals("Hello World!", response.readEntity(String.class));
+         Assert.assertEquals(200, response.getStatus());
+      } finally {
+         AuthenticationContext.getContextManager().setGlobalDefault(previousAuthContext);
+      }
+   }
+
+   /**
+    * Elytron client has truststore configured. This truststore contains self-signed certificate,
+    * but server/endpoint is secured with different self-signed certificate.
+    * Test will pass because ClientConfigProvider is ignored since different sslcontext is specified on client builder specifically.
+    */
+   @Test
+   public void testClientConfigProviderSSLContextIgnoredIfDifferentIsSet() throws Exception{
+      AuthenticationContext previousAuthContext = AuthenticationContext.getContextManager().getGlobalDefault();
+      try {
+         ElytronClientTestUtils.setElytronClientConfig(RESOURCES + "wildfly-config-different-cert.xml");
+         resteasyClientBuilder = (ResteasyClientBuilder) ClientBuilder.newBuilder();
+         resteasyClientBuilder.setIsTrustSelfSignedCertificates(false);
+
+         SSLContext sslContext = SSLContext.getInstance("TLS");
+         sslContext.init(null, new TrustManager[] { new CustomTrustManager(correctTruststore) }, null);
+         resteasyClientBuilder.sslContext(sslContext);
+
+         client = resteasyClientBuilder.build();
+         Response response = client.target(URL).request().get();
+         Assert.assertEquals("Hello World!", response.readEntity(String.class));
+         Assert.assertEquals(200, response.getStatus());
+      } finally {
+         AuthenticationContext.getContextManager().setGlobalDefault(previousAuthContext);
+      }
+   }
+
+   /**
+    * Client loads truststore from ClientConfigProvider implementation successfully even when credentials are set on RESTEasy client and not in ClientConfigProvider.
+    * This truststore contains self-signed certificate.
+    * Server/endpoint is secured with the same self-signed certificate.
+    */
+   @Test
+   public void testClientConfigProviderSSLContextIsSuccessfulWhenBasicSetOnRESTEasy() {
+      AuthenticationContext previousAuthContext = AuthenticationContext.getContextManager().getGlobalDefault();
+      try {
+         ElytronClientTestUtils.setElytronClientConfig(RESOURCES + "wildfly-config-correct-truststore.xml");
+         resteasyClientBuilder = (ResteasyClientBuilder) ClientBuilder.newBuilder();
+         resteasyClientBuilder.setIsTrustSelfSignedCertificates(false);
+         client = resteasyClientBuilder.build();
+         client.register(new BasicAuthentication("randomName", "randomPass"));
+         Response response = client.target(URL).request().get();
+         Assert.assertEquals("Hello World!", response.readEntity(String.class));
+         Assert.assertEquals(200, response.getStatus());
+      } finally {
+         AuthenticationContext.getContextManager().setGlobalDefault(previousAuthContext);
+      }
+   }
+
+   /**
+    * @tpTestDetails Test that request does choose SSLContext based on destination of the request. In this case the truststore is set
+    * for different endpoint/server and so SSL handshake will fail.
+    */
+   @Test(expected = ProcessingException.class)
+   public void testClientConfigProviderSSLContextForDifferentHostWillNotWork() {
+      AuthenticationContext previousAuthContext = AuthenticationContext.getContextManager().getGlobalDefault();
+      try {
+         ElytronClientTestUtils.setElytronClientConfig(RESOURCES + "wildfly-config-correct-truststore-different-host.xml");
+         resteasyClientBuilder = (ResteasyClientBuilder) ClientBuilder.newBuilder();
+         resteasyClientBuilder.setIsTrustSelfSignedCertificates(false);
+         client = resteasyClientBuilder.build();
+         Response response = client.target(URL).request().get();
+         Assert.assertEquals("Hello World!", response.readEntity(String.class));
+         Assert.assertEquals(200, response.getStatus());
+      } finally {
+         AuthenticationContext.getContextManager().setGlobalDefault(previousAuthContext);
+      }
+   }
+
+   /**
+    * @tpTestDetails Test that request does choose credentials based on destination of the request. In this case the truststore is set
+    * for correct endpoint/server and so SSL handshake will succeed.
+    */
+   @Test
+   public void testClientConfigProviderSSLContextForCorrectHostWillWork( @ArquillianResource java.net.URL baseURL) {
+      AuthenticationContext previousAuthContext = AuthenticationContext.getContextManager().getGlobalDefault();
+      try {
+         ElytronClientTestUtils.setElytronClientConfig(RESOURCES + "wildfly-config-correct-truststore-correct-host.xml");
+         resteasyClientBuilder = (ResteasyClientBuilder) ClientBuilder.newBuilder();
+         resteasyClientBuilder.setIsTrustSelfSignedCertificates(false);
+         client = resteasyClientBuilder.build();
+         Response response = client.target(URL).request().get();
+         Assert.assertEquals("Hello World!", response.readEntity(String.class));
+         Assert.assertEquals(200, response.getStatus());
+      } finally {
+         AuthenticationContext.getContextManager().setGlobalDefault(previousAuthContext);
+      }
    }
 
    @After
