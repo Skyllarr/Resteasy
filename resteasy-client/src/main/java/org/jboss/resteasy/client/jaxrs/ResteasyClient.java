@@ -3,6 +3,7 @@ package org.jboss.resteasy.client.jaxrs;
 import org.jboss.resteasy.client.jaxrs.i18n.Messages;
 import org.jboss.resteasy.client.jaxrs.internal.ClientConfiguration;
 import org.jboss.resteasy.client.jaxrs.internal.ClientWebTarget;
+import org.jboss.resteasy.client.jaxrs.spi.ClientConfigProvider;
 
 import javax.net.ssl.HostnameVerifier;
 import javax.net.ssl.SSLContext;
@@ -26,6 +27,7 @@ import java.util.concurrent.ScheduledExecutorService;
  */
 public class ResteasyClient implements Client
 {
+   protected ClientConfigProvider clientConfigProvider;
    protected volatile ClientHttpEngine httpEngine;
    protected volatile ExecutorService asyncInvocationExecutor;
    protected volatile ScheduledExecutorService scheduledExecutorService;
