@@ -43,9 +43,17 @@ class ClientConfigProviderTestJarHelper {
     private static final String JAR_NAME = "client-config-provider-test.jar";
 
     private static ConfigProviderProperties bearerJarConfigProperties = new ConfigProviderProperties();
+    private static ConfigProviderProperties basicAuthJarConfigProperties = new ConfigProviderProperties();
     private static ConfigProviderProperties sslJarConfigProperties = new ConfigProviderProperties();
 
     static {
+        basicAuthJarConfigProperties.mainClassName = "ClientConfigTestMainClass";
+        basicAuthJarConfigProperties.mainClassCompiled = basicAuthJarConfigProperties.mainClassName + ".class";
+        basicAuthJarConfigProperties.mainClassPath = PACKAGE_PATH + basicAuthJarConfigProperties.mainClassCompiled;
+        basicAuthJarConfigProperties.mainClassWithPackage = PACKAGE_NAME + "." + basicAuthJarConfigProperties.mainClassCompiled;
+        basicAuthJarConfigProperties.mockedClientConfigProviderImplName = "ClientConfigProviderImplCredentials";
+        basicAuthJarConfigProperties.mockedClientConfigProviderImplClassPath = PACKAGE_PATH + basicAuthJarConfigProperties.mockedClientConfigProviderImplName + ".class";
+
         sslJarConfigProperties.mainClassName = "ClientConfigTestMainClass";
         sslJarConfigProperties.mainClassCompiled = sslJarConfigProperties.mainClassName + ".class";
         sslJarConfigProperties.mainClassPath = PACKAGE_PATH + sslJarConfigProperties.mainClassCompiled;
@@ -61,7 +69,11 @@ class ClientConfigProviderTestJarHelper {
         bearerJarConfigProperties.mockedClientConfigProviderImplClassPath = PACKAGE_PATH + bearerJarConfigProperties.mockedClientConfigProviderImplName + ".class";
     }
 
-    static String createClientConfigProviderTestJarWithBASICAndSSL() throws IOException {
+    static String createClientConfigProviderTestJarWithBASIC() throws IOException {
+        return createClientConfigProviderTestJar(basicAuthJarConfigProperties);
+    }
+
+    static String createClientConfigProviderTestJarWithSSL() throws IOException {
         return createClientConfigProviderTestJar(sslJarConfigProperties);
     }
 

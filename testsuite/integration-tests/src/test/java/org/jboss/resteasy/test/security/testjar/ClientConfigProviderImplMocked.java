@@ -20,12 +20,12 @@ public class ClientConfigProviderImplMocked implements ClientConfigProvider {
 
     @Override
     public String getUsername(URI uri) throws ClientConfigException {
-        return "bill";
+        return null;
     }
 
     @Override
     public String getPassword(URI uri) throws ClientConfigException {
-        return "password1";
+        return null;
     }
 
     @Override

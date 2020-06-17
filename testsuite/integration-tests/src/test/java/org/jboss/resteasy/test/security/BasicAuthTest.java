@@ -318,7 +318,7 @@ public class BasicAuthTest {
 
     @Test
     public void testClientConfigProviderCredentials() throws IOException, InterruptedException {
-        String jarPath = ClientConfigProviderTestJarHelper.createClientConfigProviderTestJarWithBASICAndSSL();
+        String jarPath = ClientConfigProviderTestJarHelper.createClientConfigProviderTestJarWithBASIC();
 
         Process process = ClientConfigProviderTestJarHelper.runClientConfigProviderTestJar(
                 ClientConfigProviderTestJarHelper.TestType.TEST_CREDENTIALS_ARE_USED_FOR_BASIC,

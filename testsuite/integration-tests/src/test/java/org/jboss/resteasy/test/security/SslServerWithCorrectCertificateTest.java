@@ -241,7 +241,7 @@ public class SslServerWithCorrectCertificateTest extends SslTestBase {
 
    @Test
    public void testTrustedServerWithClientConfigProvider() throws IOException, InterruptedException {
-      String jarPath = ClientConfigProviderTestJarHelper.createClientConfigProviderTestJarWithBASICAndSSL();
+      String jarPath = ClientConfigProviderTestJarHelper.createClientConfigProviderTestJarWithSSL();
       File clientTruststore = new File(CLIENT_TRUSTSTORE_PATH);
       Process process = ClientConfigProviderTestJarHelper.runClientConfigProviderTestJar(
               ClientConfigProviderTestJarHelper.TestType.TEST_SSLCONTEXT_USED,
