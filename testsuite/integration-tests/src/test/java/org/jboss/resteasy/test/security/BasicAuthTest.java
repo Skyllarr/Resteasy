@@ -43,6 +43,8 @@ import org.junit.Test;
 import org.junit.experimental.categories.Category;
 import org.junit.runner.RunWith;
 
+import java.io.IOException;
+
 /**
  * @tpSubChapter Security
  * @tpChapter Integration tests
@@ -318,6 +320,33 @@ public class BasicAuthTest {
         Response response = unauthorizedClientUsingRequestFilter.target(generateURL("/secured/authorized")).request().get();
         Assert.assertEquals(HttpResponseCodes.SC_FORBIDDEN, response.getStatus());
         Assert.assertEquals(WRONG_RESPONSE, ACCESS_FORBIDDEN_MESSAGE, response.readEntity(String.class));
+    }
+
+    /**
+     * @tpTestDetails Test secured resource with correct credentials of user that is authorized to the resource. Authentication is done using ClientConfigProvider implementation inside test jar.
+     * @tpSince RESTEasy 3.7.0
+     */
+    @Test
+    public void testClientConfigProviderCredentials() throws IOException {
+        String jarPath = ClientConfigProviderTestJarHelper.createClientConfigProviderTestJarWithBASIC();
+
+        Process process = ClientConfigProviderTestJarHelper.runClientConfigProviderTestJar(
+                ClientConfigProviderTestJarHelper.TestType.TEST_CREDENTIALS_ARE_USED_FOR_BASIC,
+                jarPath,
+                new String[]{generateURL("/secured/authorized")});
+        String line = ClientConfigProviderTestJarHelper.getResultOfProcess(process);
+        Assert.assertEquals("200", line);
+        process.destroy();
+
+        process = ClientConfigProviderTestJarHelper.runClientConfigProviderTestJar(
+                ClientConfigProviderTestJarHelper.TestType.TEST_CLIENTCONFIG_CREDENTIALS_ARE_IGNORED_IF_DIFFERENT_SET,
+                jarPath,
+                new String[]{generateURL("/secured/authorized")});
+        line = ClientConfigProviderTestJarHelper.getResultOfProcess(process);
+        Assert.assertEquals("401", line);
+        process.destroy();
+
+        Assert.assertTrue(new File(jarPath).delete());
     }
 
     static class SecurityDomainSetup extends AbstractUsersRolesSecurityDomainSetup {
